@@ -1,0 +1,10 @@
+# IDE
+.vscode/
+
+# Ignore classes
+/bin/*
+!/bin/
+
+# ignore files that were created by eclipse or whatever
+.classpath
+.project
