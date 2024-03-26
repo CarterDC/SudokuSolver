@@ -10,6 +10,7 @@ public class PassResult {
 
     private char state;
     private int[][][] cellArray;
+    private boolean isNotSolvable = false;
 
     public PassResult(){
         this.state = 0b0000;

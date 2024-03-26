@@ -132,6 +132,10 @@ public class SolveResult {
 
     public void displayGrids(){
         int solutionIndex = 0;
+        if(this.solutions == null) {
+            System.err.println("Il n y a pas de solution a cette grille !");
+            return;
+        }
         while(solutionIndex <= this.solutions.length - 1){
             System.out.println(MessageFormat.format("Solution N°{0} :", solutionIndex + 1));
             Grid.displayGrid(this.solutions[solutionIndex]);

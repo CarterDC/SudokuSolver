@@ -422,6 +422,7 @@ public class Grid {
      * @return PassResult
      */
     private static PassResult executePass(int[][][] currentCellArray) {
+        // TODO : régler le prob des grilles impossibles
         // Initie un "Résultat de Passe" avec une copie de travail du tableau en param
         int[][][] newCellArray = cellArrayDeepCopy(currentCellArray);
         PassResult result = new PassResult(PassResult.NULL_STATE, newCellArray);
@@ -432,25 +433,28 @@ public class Grid {
                 int[] newCandidates = Arrays.copyOf(
                         newCellArray[lineIndex][columnIndex], newCellArray[lineIndex][columnIndex].length);
                 // on ne vérifie que les cellules contenant de multiples candidats (length > 1)
-                // on applique alors si nécessaire les 3 types de filtre : Line, Column et Square
-                int filterIndex = 0;
-                while (newCandidates.length > 1 && filterIndex <= 2) { 
-                    int[] myFilter = getFilter(newCellArray, lineIndex, columnIndex, FilterType.values()[filterIndex]);
-                    int[] difference = getDifference(newCandidates, myFilter);
-                    if (difference.length != newCandidates.length) {
-                        result.setDirty(); // indique qu'il ya eu au moins une modification du tableau durant cette passe
-                        newCandidates = difference;
-                    }
-                    filterIndex++;
-                }
-                // on vérifie s'il reste encore de multiples candidats
+                // on applique alors si nécessaire les 3 types de filtre : Line, Column et
+                // Square
                 if (newCandidates.length > 1) {
-                    result.setHasMultipleCandidates();
-                } else if (newCandidates.length == 0) {
-                    // toutes les combinaisons ne fonctionnent pas forcément lorsqu'on cherche de multiples solutions
-                    result.setIsUnsolvable();
+                    for(FilterType filterType : FilterType.values()){
+                        int[] myFilter = getFilter(newCellArray, lineIndex, columnIndex, filterType);
+                        int[] difference = getDifference(newCandidates, myFilter);
+                        if (difference.length != newCandidates.length) {
+                            result.setDirty(); // indique qu'il ya eu au moins une modification du tableau durant cette
+                                               // passe
+                            newCandidates = difference;
+                        }
+                    }
+                    // on vérifie s'il reste encore de multiples candidats
+                    if (newCandidates.length > 1) {
+                        result.setHasMultipleCandidates();
+                    } else if (newCandidates.length == 0) {
+                        // toutes les combinaisons ne fonctionnent pas forcément lorsqu'on cherche de
+                        // multiples solutions
+                        result.setIsUnsolvable();
+                    }
+                    newCellArray[lineIndex][columnIndex] = newCandidates;
                 }
-                newCellArray[lineIndex][columnIndex] = newCandidates;
             }
         }
         return result;
@@ -465,7 +469,7 @@ public class Grid {
         do {
             passResult = executePass(passResult.getCellArrayInstance());
             nbPasses++;
-        } while (nbPasses <= SolveResult.MAX_PASSES && passResult.hasMultipleCandidates() && passResult.isDirty());
+        } while (nbPasses <= SolveResult.MAX_PASSES && !passResult.isUnsolvable() && passResult.hasMultipleCandidates() && passResult.isDirty());
 
         long endingTime = System.nanoTime();
         SolveResult result = new SolveResult(nbMaxSolutions, passResult, nbPasses, endingTime - startingTime);
