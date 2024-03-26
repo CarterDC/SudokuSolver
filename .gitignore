@@ -1,6 +1,9 @@
 # IDE
 .vscode/
 
+# javadoc
+/doc/**
+
 # Ignore classes
 /bin/*
 !/bin/
