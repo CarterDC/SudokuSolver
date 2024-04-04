@@ -361,7 +361,7 @@ public class Grid {
      * @param origCellArray
      * @return int[][][] : un tableau ne contenant aucune des instances d'origine
      */
-    private static int[][][] cellArrayDeepCopy(int[][][] origCellArray) {
+    public static int[][][] cellArrayDeepCopy(int[][][] origCellArray) {
         int[][][] newCellArray = new int[9][9][];
         for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
             for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
@@ -422,29 +422,20 @@ public class Grid {
      * @return PassResult
      */
     private static PassResult executePass(int[][][] currentCellArray) {
-        // TODO : régler le prob des grilles impossibles
         // Initie un "Résultat de Passe" avec une copie de travail du tableau en param
-        int[][][] newCellArray = cellArrayDeepCopy(currentCellArray);
-        PassResult result = new PassResult(PassResult.NULL_STATE, newCellArray);
+        int[][][] newCellArray = Grid.cellArrayDeepCopy(currentCellArray);
+        PassResult result = new PassResult(newCellArray);
 
         for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
             for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
-                // Crée une copie de travail de la liste des candidats (ou du candidat)
-                int[] newCandidates = Arrays.copyOf(
-                        newCellArray[lineIndex][columnIndex], newCellArray[lineIndex][columnIndex].length);
-                // on ne vérifie que les cellules contenant de multiples candidats (length > 1)
-                // on applique alors si nécessaire les 3 types de filtre : Line, Column et
-                // Square
-                if (newCandidates.length > 1) {
-                    for(FilterType filterType : FilterType.values()){
-                        int[] myFilter = getFilter(newCellArray, lineIndex, columnIndex, filterType);
-                        int[] difference = getDifference(newCandidates, myFilter);
-                        if (difference.length != newCandidates.length) {
+                // 
+                int nbCurrentCandidates = newCellArray[lineIndex][columnIndex].length;
+                if ( nbCurrentCandidates > 1) {
+                    int[] newCandidates = getNewCandidates(newCellArray, lineIndex, columnIndex);
+                    if (nbCurrentCandidates != newCandidates.length) {
                             result.setDirty(); // indique qu'il ya eu au moins une modification du tableau durant cette
                                                // passe
-                            newCandidates = difference;
                         }
-                    }
                     // on vérifie s'il reste encore de multiples candidats
                     if (newCandidates.length > 1) {
                         result.setHasMultipleCandidates();
@@ -460,32 +451,80 @@ public class Grid {
         return result;
     }
 
-    public static SolveResult solve(int[][][] cellArray, int nbMaxSolutions) {
+    private static PassResult recursePass(PassResult currentPassResult) {
+        //
+        currentPassResult.resetState();
+        currentPassResult.incNbPasses();
+        int[][][] newCellArray = currentPassResult.getCellArrayCopy();
+
+        for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
+            for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
+                int nbCurrentCandidates = newCellArray[lineIndex][columnIndex].length;
+                if ( nbCurrentCandidates > 1) {
+                    // on ne vérifie que les cellules contenant de multiples candidats (length > 1)
+                    int[] newCandidates = getNewCandidates(newCellArray, lineIndex, columnIndex);
+                    if (newCandidates.length == 0) {
+                        // 
+                        currentPassResult.setIsUnsolvable();
+                        return currentPassResult;
+                    }      
+                    if (newCandidates.length > 1) {
+                        // il reste encore de multiples candidats pour cette cellule
+                        currentPassResult.setHasMultipleCandidates();
+                    }
+                    if (newCandidates.length != nbCurrentCandidates ) {
+                        // on indique qu'il ya eu (au moins) une modification du tableau durant cette passe
+                        currentPassResult.setDirty();
+                        // on mets à jour la liste des candidats
+                        newCellArray[lineIndex][columnIndex] = newCandidates;                        
+                    }
+                    newCellArray[lineIndex][columnIndex] = newCandidates;
+                }
+            }
+        }
+        // on remplace l'ancien cellArray par le nouveau et on boucle (ou pas)
+        currentPassResult.setCellArray(newCellArray);
+        if (currentPassResult.needsRecursion()) {
+            return recursePass(currentPassResult);
+        }
+        return currentPassResult;
+    }
+
+    private static int[] getNewCandidates(int[][][] cellArray, int lineIndex, int columnIndex) {
+        int[] currentCandidates = cellArray[lineIndex][columnIndex];
+        int[] newCandidates = Arrays.copyOf(currentCandidates, currentCandidates.length);
+
+        int filterIndex = 0;
+        while (filterIndex < 3 && newCandidates.length > 0) {
+            int[] myFilter = getFilter(cellArray, lineIndex, columnIndex, FilterType.values()[filterIndex]);
+            newCandidates = getDifference(newCandidates, myFilter);
+            filterIndex++;
+        }
+
+        return newCandidates;
+    }
+
+    /*public static SolveResult recurseSolve(int[][][] cellArray, int nbMaxSolutions) {
         //TODO : Refactor this shit !
         long startingTime = System.nanoTime();
 
-        int nbPasses = 0;
-        PassResult passResult = new PassResult((char) 0, cellArray);
-        do {
-            passResult = executePass(passResult.getCellArrayInstance());
-            nbPasses++;
-        } while (nbPasses <= SolveResult.MAX_PASSES && !passResult.isUnsolvable() && passResult.hasMultipleCandidates() && passResult.isDirty());
+        PassResult passResult = recursePass(new PassResult(cellArray));        
 
         long endingTime = System.nanoTime();
-        SolveResult result = new SolveResult(nbMaxSolutions, passResult, nbPasses, endingTime - startingTime);
+        SolveResult result = new SolveResult(nbMaxSolutions, passResult, endingTime - startingTime);
 
         if (result.needsRecursion()) {
             // trouver la premiere case avec multiples candidats
             // faire une soluce avec la première valeur.
             // faire une soluce avec toutes les autres.
-            int[][][] currentCellArray = passResult.getCellArrayInstance();
+            int[][][] currentCellArray = passResult.getCellArray();
             int[] coords = getFirstUnresolvedCellIndexes(currentCellArray);
             int[] currentCandidates = currentCellArray[coords[0]][coords[1]];
 
             int[][][] newCellArray = cellArrayDeepCopy(currentCellArray);
             newCellArray[coords[0]][coords[1]] = new int[] { currentCandidates[0] };
             // lancer une solve avec ce cellArray
-            result.combineResults(solve(newCellArray, nbMaxSolutions));
+            result.aggregate(recurseSolve(newCellArray, nbMaxSolutions));
             // vérif si on a notre nbre de soluces
             if (!result.isFull()) {
                 //on n'a pas atteint notre quota de soluces, on continue avec le reste
@@ -493,7 +532,51 @@ public class Grid {
                 newCellArray = cellArrayDeepCopy(currentCellArray);
                 int[] remainder = Arrays.copyOfRange(currentCandidates, 1, currentCandidates.length);
                 newCellArray[coords[0]][coords[1]] = remainder;
-                result.combineResults(solve(newCellArray, nbMaxSolutions));
+                result.aggregate(recurseSolve(newCellArray, nbMaxSolutions));
+            }
+        }
+        return result;
+    }*/
+
+    
+    public static SolveResult solve(int[][][] cellArray, int nbMaxSolutions) {
+        //TODO : Refactor this shit !
+        long startingTime = System.nanoTime();
+
+        
+       /* int nbPasses = 0;
+        PassResult passResult = new PassResult(cellArray);
+        do {
+            passResult = executePass(passResult.getCellArray());
+            nbPasses++;
+        } while (nbPasses <= PassResult.MAX_PASSES && !passResult.isUnsolvable() && passResult.hasMultipleCandidates() && passResult.isDirty());
+        passResult.setPasses(nbPasses);
+        */
+        PassResult passResult = recursePass(new PassResult(cellArray));
+
+        long endingTime = System.nanoTime();        
+        SolveResult result = new SolveResult(nbMaxSolutions, passResult, endingTime - startingTime);
+
+        if (result.needsRecursion()) {
+            // trouver la premiere case avec multiples candidats
+            // faire une soluce avec la première valeur.
+            // faire une soluce avec toutes les autres.
+            int[][][] currentCellArray = passResult.getCellArray();
+            int[] coords = getFirstUnresolvedCellIndexes(currentCellArray);
+            int[] currentCandidates = currentCellArray[coords[0]][coords[1]];
+
+            int[][][] newCellArray = cellArrayDeepCopy(currentCellArray);
+            newCellArray[coords[0]][coords[1]] = new int[] { currentCandidates[0] };
+            // lancer une solve avec ce cellArray
+            result.aggregate(solve(newCellArray, nbMaxSolutions));
+            // vérif si on a notre nbre de soluces
+            if (!result.isFull()) {
+                //on n'a pas atteint notre quota de soluces, on continue avec le reste
+                // second cellArray
+                newCellArray = cellArrayDeepCopy(currentCellArray);
+                int[] remainder = Arrays.copyOfRange(currentCandidates, 1, currentCandidates.length);
+                newCellArray[coords[0]][coords[1]] = remainder;
+                result.aggregate(solve(newCellArray, nbMaxSolutions));
             }
         }
         return result;
@@ -523,15 +606,19 @@ public class Grid {
     }
     
     /** 
-     * Affiche une grille de sudoku en mode console 
+     * Renvoie une string contenant une grille prete à afficher
+     * <p>
      * Les cellules indéterminées (contenant plusieurs candidats potentiels) sont affichées avec un "." 
-     * @param cellArray
+     * @param cellArray la grille à afficher
+     * @return String
      */
-    public static void displayGrid(int[][][] cellArray) {
-        System.out.println("");
-        System.out.println(" -------------------------");
+    public static String cellArrayToString(int[][][] cellArray) {
+        String returnString = "";
+
+        returnString += " -------------------------";
         for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
-            String lineString = " |";
+            // création d'une ligne caractere par caractere
+            String lineString = "\n |";
             for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
                 String myChar = (cellArray[lineIndex][columnIndex].length == 1)
                         ? String.valueOf(cellArray[lineIndex][columnIndex][0])
@@ -542,11 +629,12 @@ public class Grid {
                     lineString += " |";
                 }
             }
-            System.out.println(lineString);
-            // ajoute une séparation toutes les 3 lignes
+            returnString += lineString;
+            // ajoute une ligne de séparation toutes les 3 lignes
             if (lineIndex % 3 == 2) {
-                System.out.println(" -------------------------");
+                returnString +="\n -------------------------";
             }
         }
+        return returnString + "\n";
     }
 }

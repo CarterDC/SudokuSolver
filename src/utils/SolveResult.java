@@ -2,65 +2,84 @@ package utils;
 
 import java.text.MessageFormat;
 
+/**
+ * Classe qui compile les solutions trouvées ainsi que les statistiques d'execution
+ * <p>
+ * 
+ */
 public class SolveResult {
-    public static final int MAX_PASSES = 81;
     
-    private int nbPasses = 0;
-    private int nbRecursions = 1;
     private int nbMaxSolutions = 0;
-    private int nbUnsolvable = 0;
-    private int nbFailed = 0;
-    private long totalNanosec = 0;
+    private Stats stats;
+
     private boolean needsRecursion = false;
 
     private int[][][][] solutions;
 
     public SolveResult(int nbMaxSolutions){
         this.nbMaxSolutions = nbMaxSolutions;
+        this.stats = new Stats();
     }
 
-    public SolveResult(int nbMaxSolutions, PassResult passResult, int nbPasses, long passTime){
+    public SolveResult(int nbMaxSolutions, PassResult passResult, long passTime){
         this.nbMaxSolutions = nbMaxSolutions;
-        this.nbPasses = nbPasses;
-        this.totalNanosec = passTime;
+        this.stats = new Stats();
+
+        this.stats.addNbPasses(passResult.getNbPasses()); 
+        this.stats.addNanoSeconds(passTime);
 
         if(passResult.isUnsolvable()){
-            this.setNbUnsolvable(1);
+            this.stats.incNbUnsolvable();
             return;
         }
-        if(nbPasses >= MAX_PASSES){
-            this.setNbFailed(1);
+        if(passResult.getNbPasses() >= PassResult.MAX_PASSES){
+            this.stats.incNbFailed();
             return;
         }
-        //todo : check s'il faut vérif la qtté de soluces avant
+
+        //TODO : check s'il faut vérif la qtté de soluces avant
         if(passResult.isSolved()){
             this.addSolution(passResult.getCellArrayCopy());
             return;
         }
         if(passResult.hasMultipleCandidates()){
-            //todo peut être vérifs ici
+            //TODO peut être vérifs ici
             this.needsRecursion = true;            
         }
     }
 
-    public void combineResults(SolveResult otherResult) {
+    public void aggregate(SolveResult otherResult) {
 
-        this.nbMaxSolutions = otherResult.nbMaxSolutions;
-
-        this.nbRecursions += otherResult.nbRecursions;
-        this.nbPasses += otherResult.nbPasses;
-        this.nbUnsolvable += otherResult.nbUnsolvable;
-        this.nbFailed += otherResult.nbFailed;
-        this.totalNanosec += otherResult.totalNanosec;
+        this.nbMaxSolutions = otherResult.nbMaxSolutions; // TODO : virer ça à terme
+        this.stats.aggregate(otherResult.getStats());
         // ! On ne copie pas le flag "needsRecursion"
 
-        if(otherResult.solutions == null) { return;}
-        int solutionIndex = 0;        
-        while(solutionIndex <= otherResult.solutions.length - 1) {
-            // todo faire la copie ici, en une seule fois
-            this.addSolution(otherResult.solutions[solutionIndex]);
+        // on aggrége toutes les solutions
+        int nbSolutionToAdd = otherResult.getNbSolutions();
+        if( nbSolutionToAdd == 0) {
+            // pas de soluces à ajouter
+            return;
+        }
+        if( this.getNbSolutions() == 0) {
+            // pas de soluces de départ, on garde les nouvelles
+            this.solutions = otherResult.solutions;
+            return;
+        }
+
+        //on crée un nouveau tableau pour contenir toutes les solutions
+        int[][][][] newSolutions = new int[this.getNbSolutions() + nbSolutionToAdd][][][];
+
+        // on copie les anciennes soluces puis les nouvelles (pas besoin de deep copy ici)
+        int solutionIndex = 0; 
+        for(int[][][] cellArray : this.solutions ) {
+            newSolutions[solutionIndex] = cellArray;
             solutionIndex++;
         }
+        for(int[][][] cellArray : otherResult.solutions ) {
+            newSolutions[solutionIndex] = cellArray;
+            solutionIndex++;
+        }
+        this.solutions = newSolutions;
     }
 
     public void addSolution(int[][][] cellArray){
@@ -76,72 +95,39 @@ public class SolveResult {
         this.solutions = newSolutions;
     }
 
-    public void setNbUnsolvable(int newValue){
-        this.nbUnsolvable = newValue;
-    }
-
-    public void setNbFailed(int newValue){
-        this.nbFailed = newValue;
-    }
-
     public int getNbSolutions(){
         return this.solutions == null ? 0 : this.solutions.length;
     }
 
-    public int getNbMaxSolutions(){
-        return this.nbMaxSolutions;
+    public Stats getStats(){
+        return this.stats;
     }
 
     public boolean isFull(){
         return this.getNbSolutions() >= this.nbMaxSolutions;
     }
 
-    public void incNbPasses(){
-        this.nbPasses++;
-    }
-
-    public void setNbPasses(int newValue){
-        this.nbPasses = newValue;
-    }
-
-    public int getNbPasses(){
-        return this.nbPasses;
-    }
-
-    public void setTotalNanosec(long newValue){
-        this.totalNanosec = newValue;
-    }
-
-    public long getTotalNanosec(){
-        return this.totalNanosec;
-    }
-
     public boolean needsRecursion(){
         return this.needsRecursion;
     }
 
-    public void displayStats(){
-        System.out.println(MessageFormat.format("Nb Recursions : {0}", this.nbRecursions - 1));
-        System.out.println(MessageFormat.format("Nb Passes : {0}", this.nbPasses));
-        System.out.println(MessageFormat.format("Nb Impossible a resoudre : {0}", this.nbUnsolvable));
-        System.out.println(MessageFormat.format("Nb Abandonnes (> nbPassesMax) : {0}", this.nbFailed));
-
-        System.out.println(MessageFormat.format(
-            "Total ms : {0}", String.format("%.3f", this.totalNanosec / 1000000.0f)));
-    }
-
-    public void displayGrids(){
+    /**
+     * Affiche la totalité des solutions
+     */
+    public void displaySolutions(){ // TODO : pê remplacer par un toString ?
         int solutionIndex = 0;
-        if(this.solutions == null) {
-            System.err.println("Il n y a pas de solution a cette grille !");
-            return;
+        if(this.getNbSolutions() == 0) {
+            System.err.println("ERREUR : Il n y a pas de solution a cette grille !");
+        } else {
+            //il y a au moins une soluce, on affiche la/les grilles
+            while(solutionIndex <= this.solutions.length - 1){
+                System.out.println(MessageFormat.format("Solution N°{0} :", solutionIndex + 1));
+                System.out.println(Grid.cellArrayToString(this.solutions[solutionIndex]));
+                solutionIndex++;
+            }            
         }
-        while(solutionIndex <= this.solutions.length - 1){
-            System.out.println(MessageFormat.format("Solution N°{0} :", solutionIndex + 1));
-            Grid.displayGrid(this.solutions[solutionIndex]);
-            solutionIndex++;
-        }
+
+        // peu importe qu'il y ait des solutions ou pas, on affiche les stats
+        System.out.println("" + this.stats);
     }
-
-
 }

@@ -47,8 +47,12 @@ jar cvmf ..\src\META-INF\MANIFEST.MF ..\monSudoku.jar Sudoku.class utils\*.class
 cd ..
 echo.
 
-echo Execution du .jar
+echo Affichage de l'aide
 echo -----------------
 echo.
 java -jar monSudoku.jar -h
 echo.
+
+echo java -jar monSudoku.jar grille1.txt 2 | clip
+echo Pour votre confort, la commande par default du programme a ete placee dans le presse-papier.
+echo Vous pouvez juste appuyer sur ctrl + v 

@@ -1,4 +1,3 @@
-// TODO : faire une grille sans doublon mais qui ne soit pas faisable
 import utils.*;
 
 import java.util.Optional;
@@ -36,14 +35,13 @@ public class Sudoku {
         System.out.println("La grille fournie ne contient aucun doublons.");
 
         //affichage de la grille d'origine pour référence
-        Grid.displayGrid(cellArray.get());
+        System.out.println("\nGrille de depart : \n" + Grid.cellArrayToString(cellArray.get()));
         
         // Résolution :
         // Effectue plusieurs passes successives pour tenter de trouver le nombre de solutions passé en paramètre
         SolveResult result = Grid.solve(cellArray.get(), myArgs.getNbMaxSolutions());
         // Affichage des résultats
-        result.displayGrids();
-        result.displayStats();
+        result.displaySolutions();
     }
 
     private static void displayHelp(){
@@ -59,6 +57,7 @@ public class Sudoku {
         System.out.println(helpString);
     }
 
+    // juste pour éviter le warning de javaDoc
     private Sudoku(){}
 
 }
