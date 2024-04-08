@@ -1,12 +1,12 @@
 # -----------------------
 # Fichier test_grille_03.txt 
 # grille utilisée pour les tests JUnit
-# grille invalide : la ligne 9 comporte un chiffre non valide ( 0 )
+# grille invalide : les lignes 3 et 8 comportent un caractère non valide : espace et 0 
 # -----------------------
 31..847.6
 .491.7.3.
 ......1..
-85.4..9..
+85.4 .9..
 .24.35.7.
 ....7..24
 23..91...

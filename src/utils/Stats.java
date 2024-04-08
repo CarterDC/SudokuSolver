@@ -13,7 +13,7 @@ public class Stats {
      * On ne compte pas la première occurence comme étant une récursion
      *  puisqu'elle ne s'est executée qu'une fois, d'où le départ à -1
      */
-    private static int nbRecursions = -1;
+    private int nbRecursions = 0;
 
     private int nbPasses = 0;
     private int nbUnsolvableGrids = 0;
@@ -21,7 +21,7 @@ public class Stats {
     private long nbNanoSeconds = 0;
 
     public Stats(){
-        Stats.nbRecursions++;
+       
     }
 
     public void aggregate(Stats otherStats){
@@ -34,11 +34,11 @@ public class Stats {
     public String toString(){
         String returnString = "Statistiques : ";
 
-        returnString += "\n\t* Nb Recursions : " + Stats.nbRecursions;
+        returnString += "\n\t* Nb Recursions : " + this.nbRecursions;
         returnString += "\n\t* Nb Passes : " + this.nbPasses; 
         returnString += "\n\t* Nb Impossible a resoudre : " + this.nbUnsolvableGrids;
         returnString += "\n\t* Nb Abandonnes (> nbPassesMax) : " + this.nbFailedGrids;
-        returnString += "\n\t* Total ms : " + String.format("%.3f", this.nbNanoSeconds / 1000000.0f);
+        returnString += "\n\t* Passes ms : " + String.format("%.3f", this.nbNanoSeconds / 1000000.0f);
 
         return returnString;
     }
@@ -49,7 +49,7 @@ public class Stats {
     }
 
     public int getNbRecursions() {
-        return Stats.nbRecursions;
+        return this.nbRecursions;
     }
 
     public int getNbUnsolvableGrids() {
@@ -65,6 +65,10 @@ public class Stats {
     }
 
     // "Setters" par incrément
+    public void incNbRecursion(){
+        this.nbRecursions++;
+    }
+
     public void incNbPasses() {
         this.nbPasses++;
     }

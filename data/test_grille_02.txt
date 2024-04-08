@@ -1,15 +1,16 @@
 # -----------------------
 # Fichier test_grille_02.txt 
 # grille utilisée pour les tests JUnit
-# grille invalide : la ligne 3 ne comporte que 8 caractères valides
+# grille invalide : les lignes 2, 3 et 6 ne comportent pas le bon nombre de caractères valides
+# les '.' en fin de ligne ont été enlevés
 # -----------------------
 31..847.6
 .491.7.3.
 ......1.
-85.4..9..
+85.4..9
 .24.35.7.
 ....7..24
-23..91...
+23..91
 9...4.65.
 ..62...19
 #    

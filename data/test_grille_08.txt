@@ -1,8 +1,8 @@
 # -----------------------
-# Fichier test_grille_06.txt 
+# Fichier test_grille_08.txt 
 # grille utilisée pour les tests JUnit
-# grille invalide : valide pour le parsing mais invalide pour les doublons ligne
-# Doublon de 7 à la ligne 8
+# grille invalide : valide pour le parsing mais invalide pour les doublons de carré
+# Doublon de 2 dans le carré 8
 # -----------------------
 ..97...61
 .21......
@@ -11,8 +11,8 @@
 4..61.793
 ..8..9...
 .36.4..2.
-...3...1.
-.7..7.4..
+...3..21.
+.7....4..
 #    
 # -------------------------
 #  |     9 | 7     |   6 1 |
@@ -24,6 +24,6 @@
 #  |     8 |     9 |       |
 #  -------------------------
 #  |   3 6 |   4   |   2   |
-#  |       | 3     |   1   |
-#  |   7   |   7   | 4     |
+#  |       | 3     | 2 1   |
+#  |   7   |       | 4     |
 #  -------------------------

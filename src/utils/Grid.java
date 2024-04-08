@@ -19,6 +19,10 @@ import java.util.regex.*;
  * Note : Cette classe ne peut pas être instanciée.
  */
 public class Grid {
+    /**
+     * Le nombre maximum de passes récursives autorisées, pour éviter le risque de boucle infinie.
+     */
+    public static final int MAX_PASS_RECURSIONS = 81; // arbitraire, certainement pas necessaire et sur-évalué 
 
     // Pour empêcher l'instanciation
     private Grid(){}
@@ -58,7 +62,8 @@ public class Grid {
         try (Scanner fileScanner = new Scanner(new File(fileName))) {
             int lineIndex = 0;
             while (fileScanner.hasNextLine()) {
-                String fileLine = fileScanner.nextLine();
+                // on lit une ligne sans les trailing spaces 
+                String fileLine = fileScanner.nextLine().trim();
                 if (isValidFileLine(fileLine)) {
                     // la ligne extraite contient exactement 9 caractères valides (1 à 9 + ".")
                     // on la parse caractère par caractère
@@ -151,8 +156,9 @@ public class Grid {
                 }
             }
         } catch (CustomException e) {
+            // on indique bien qu'il ya des doublons
             hasDuplicates = true;
-            String errMsg = MessageFormat.format("ERREUR : {0} N°{1}, doublon de {2} !", e.myArgs[0], e.myArgs[1],
+            String errMsg = MessageFormat.format("ERREUR : {0} numero {1}, doublon de {2} !", e.myArgs[0], e.myArgs[1],
                     e.myArgs[2]);
             System.err.println(errMsg);
         }
@@ -414,6 +420,7 @@ public class Grid {
     }
     
     /** 
+     * TODO : refaire les comments
      * Effectue une passe sur un tableau de cellules et renvoie une instance de "Résultat de la passe"
      * Une passe passe en revue successivement chaque ligne, colonne et carré
      * pour réduire le nombre de candidats possibles et placer des chiffres de façon définitive
@@ -421,60 +428,29 @@ public class Grid {
      * @param currentCellArray
      * @return PassResult
      */
-    private static PassResult executePass(int[][][] currentCellArray) {
-        // Initie un "Résultat de Passe" avec une copie de travail du tableau en param
-        int[][][] newCellArray = Grid.cellArrayDeepCopy(currentCellArray);
-        PassResult result = new PassResult(newCellArray);
-
-        for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
-            for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
-                // 
-                int nbCurrentCandidates = newCellArray[lineIndex][columnIndex].length;
-                if ( nbCurrentCandidates > 1) {
-                    int[] newCandidates = getNewCandidates(newCellArray, lineIndex, columnIndex);
-                    if (nbCurrentCandidates != newCandidates.length) {
-                            result.setDirty(); // indique qu'il ya eu au moins une modification du tableau durant cette
-                                               // passe
-                        }
-                    // on vérifie s'il reste encore de multiples candidats
-                    if (newCandidates.length > 1) {
-                        result.setHasMultipleCandidates();
-                    } else if (newCandidates.length == 0) {
-                        // toutes les combinaisons ne fonctionnent pas forcément lorsqu'on cherche de
-                        // multiples solutions
-                        result.setIsUnsolvable();
-                    }
-                    newCellArray[lineIndex][columnIndex] = newCandidates;
-                }
-            }
-        }
-        return result;
-    }
-
-    private static PassResult recursePass(PassResult currentPassResult) {
+    private static PassResult recursePass(PassResult currentPassResult, int recursionCounter) {
         //
-        currentPassResult.resetState();
-        currentPassResult.incNbPasses();
-        int[][][] newCellArray = currentPassResult.getCellArrayCopy();
+        PassResult newPassResult = new PassResult(currentPassResult.getCellArray());
+        newPassResult.setNbPasses(recursionCounter + 1);
+        int[][][] newCellArray = newPassResult.getCellArray();
 
         for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
             for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
                 int nbCurrentCandidates = newCellArray[lineIndex][columnIndex].length;
-                if ( nbCurrentCandidates > 1) {
+                if ( nbCurrentCandidates > 1 ) {
                     // on ne vérifie que les cellules contenant de multiples candidats (length > 1)
                     int[] newCandidates = getNewCandidates(newCellArray, lineIndex, columnIndex);
-                    if (newCandidates.length == 0) {
-                        // 
-                        currentPassResult.setIsUnsolvable();
-                        return currentPassResult;
-                    }      
+                    if ( newCandidates.length == 0 ) {
+                        newPassResult.setUnsolvable();                        
+                        return newPassResult;
+                    }
                     if (newCandidates.length > 1) {
                         // il reste encore de multiples candidats pour cette cellule
-                        currentPassResult.setHasMultipleCandidates();
+                        newPassResult.setHasMultipleCandidates();
                     }
                     if (newCandidates.length != nbCurrentCandidates ) {
                         // on indique qu'il ya eu (au moins) une modification du tableau durant cette passe
-                        currentPassResult.setDirty();
+                        newPassResult.setDirty();
                         // on mets à jour la liste des candidats
                         newCellArray[lineIndex][columnIndex] = newCandidates;                        
                     }
@@ -482,14 +458,24 @@ public class Grid {
                 }
             }
         }
-        // on remplace l'ancien cellArray par le nouveau et on boucle (ou pas)
-        currentPassResult.setCellArray(newCellArray);
-        if (currentPassResult.needsRecursion()) {
-            return recursePass(currentPassResult);
-        }
-        return currentPassResult;
-    }
 
+        if (newPassResult.needsRecursion() && recursionCounter < Grid.MAX_PASS_RECURSIONS) {
+            recursionCounter++;
+            return recursePass(newPassResult, recursionCounter);
+        }
+        return newPassResult;
+    }
+    
+    /** 
+     * Renvoie toutes les valeurs possible pour la cellule aux coordonnées (lineIndex, columnIndex)
+     * <p>
+     * Trouve les nouveaux candidats en faisant la différence entre la liste actuelle et chaque filtre successif
+     * filtre de ligne, de colonne et de carré
+     * @param cellArray
+     * @param lineIndex 
+     * @param columnIndex
+     * @return int[] 
+     */
     private static int[] getNewCandidates(int[][][] cellArray, int lineIndex, int columnIndex) {
         int[] currentCandidates = cellArray[lineIndex][columnIndex];
         int[] newCandidates = Arrays.copyOf(currentCandidates, currentCandidates.length);
@@ -504,55 +490,37 @@ public class Grid {
         return newCandidates;
     }
 
-    /*public static SolveResult recurseSolve(int[][][] cellArray, int nbMaxSolutions) {
-        //TODO : Refactor this shit !
+    public static void recurseSolve(SolveResult solveResult) {
+        solveResult.incRecursionCounter();
+
         long startingTime = System.nanoTime();
-
-        PassResult passResult = recursePass(new PassResult(cellArray));        
-
+        solveResult.passResult = recursePass(solveResult.passResult, 0);
         long endingTime = System.nanoTime();
-        SolveResult result = new SolveResult(nbMaxSolutions, passResult, endingTime - startingTime);
 
-        if (result.needsRecursion()) {
-            // trouver la premiere case avec multiples candidats
-            // faire une soluce avec la première valeur.
-            // faire une soluce avec toutes les autres.
-            int[][][] currentCellArray = passResult.getCellArray();
-            int[] coords = getFirstUnresolvedCellIndexes(currentCellArray);
-            int[] currentCandidates = currentCellArray[coords[0]][coords[1]];
+        //faire le process du passResult pour déterminer la prochaine action, return ou recurse
+        solveResult.processPassResult();
 
-            int[][][] newCellArray = cellArrayDeepCopy(currentCellArray);
-            newCellArray[coords[0]][coords[1]] = new int[] { currentCandidates[0] };
-            // lancer une solve avec ce cellArray
-            result.aggregate(recurseSolve(newCellArray, nbMaxSolutions));
+        if (solveResult.needsRecursion()) {
+            // 
+            int[][][][] cellArrayFork = createFork(solveResult.passResult.getCellArray());
+            solveResult.passResult.setCellArray(cellArrayFork[0]);
+            Grid.recurseSolve(solveResult);
             // vérif si on a notre nbre de soluces
-            if (!result.isFull()) {
-                //on n'a pas atteint notre quota de soluces, on continue avec le reste
-                // second cellArray
-                newCellArray = cellArrayDeepCopy(currentCellArray);
-                int[] remainder = Arrays.copyOfRange(currentCandidates, 1, currentCandidates.length);
-                newCellArray[coords[0]][coords[1]] = remainder;
-                result.aggregate(recurseSolve(newCellArray, nbMaxSolutions));
+            if (!solveResult.isFull()) {
+                // on n'a pas atteint notre quota de soluces, on continue avec le second embranchement
+                solveResult.passResult.setCellArray(cellArrayFork[1]);
+                Grid.recurseSolve(solveResult);
             }
         }
-        return result;
-    }*/
+        return;
+    }
 
-    
+    /*
     public static SolveResult solve(int[][][] cellArray, int nbMaxSolutions) {
         //TODO : Refactor this shit !
         long startingTime = System.nanoTime();
-
         
-       /* int nbPasses = 0;
-        PassResult passResult = new PassResult(cellArray);
-        do {
-            passResult = executePass(passResult.getCellArray());
-            nbPasses++;
-        } while (nbPasses <= PassResult.MAX_PASSES && !passResult.isUnsolvable() && passResult.hasMultipleCandidates() && passResult.isDirty());
-        passResult.setPasses(nbPasses);
-        */
-        PassResult passResult = recursePass(new PassResult(cellArray));
+        PassResult passResult = recursePass(new PassResult(cellArray), 0);
 
         long endingTime = System.nanoTime();        
         SolveResult result = new SolveResult(nbMaxSolutions, passResult, endingTime - startingTime);
@@ -562,7 +530,7 @@ public class Grid {
             // faire une soluce avec la première valeur.
             // faire une soluce avec toutes les autres.
             int[][][] currentCellArray = passResult.getCellArray();
-            int[] coords = getFirstUnresolvedCellIndexes(currentCellArray);
+            int[] coords = getFirstForkPoint(currentCellArray);
             int[] currentCandidates = currentCellArray[coords[0]][coords[1]];
 
             int[][][] newCellArray = cellArrayDeepCopy(currentCellArray);
@@ -580,15 +548,35 @@ public class Grid {
             }
         }
         return result;
+    }*/
+
+    private static int[][][][] createFork(int[][][] cellArrayToSplit) {
+        // création du tableau d'embranchement
+        int[][][][] cellArrayFork = new int[2][][][];
+        cellArrayFork[0] = Grid.cellArrayDeepCopy(cellArrayToSplit);
+        cellArrayFork[1] = Grid.cellArrayDeepCopy(cellArrayToSplit);
+
+        // trouver la premiere case avec multiples candidats
+        int[] coords = getFirstForkPoint(cellArrayToSplit);
+        int[] forkCandidates = cellArrayToSplit[coords[0]][coords[1]];
+
+        // on crée l'embranchement : 
+        // le premier tableau contient la première valeur de forkCandidates
+        // le second tableau, toutes les autres valeurs
+        cellArrayFork[0][coords[0]][coords[1]] = new int[]{forkCandidates[0]};
+        int[] remainder = Arrays.copyOfRange(forkCandidates, 1, forkCandidates.length);
+        cellArrayFork[1][coords[0]][coords[1]] = remainder;
+
+        return cellArrayFork;
     }
-    
+
     /** 
      * Renvoie les coordonnées (ligne, colonne) de la première cellule trouvée qui contient plusieurs candidats
      * Cette fonction n'est utilisée que sur des tableaux "multi-candidats" d'où l'absence de vérifications qu'on a bien trouvé
      * @param cellArray 
      * @return int[] les coordonnées de la cellule sous la forme d'un tableau {ligne, colonne}
      */
-    private static int[] getFirstUnresolvedCellIndexes(int[][][] cellArray) {
+    private static int[] getFirstForkPoint(int[][][] cellArray) {
         int lineIndex = 0;
         int columnIndex = 0;
         boolean found = false;

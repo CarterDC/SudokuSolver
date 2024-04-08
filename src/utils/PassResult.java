@@ -20,19 +20,17 @@ public class PassResult {
     public static final char HAS_MULTIPLE_CANDIDATES= 0b0010;
     public static final char IS_UNSOLVABLE = 0b0100;
 
-    public static final int MAX_PASSES = 81; // certainement bcp trop et inutile
-
     private char state = PassResult.NULL_STATE;
     private int[][][] cellArray;
     private int nbPasses;
 
-    public PassResult(){
-        this.cellArray = new int[9][9][];
-        this.nbPasses = 0;
-    }
-
-    public PassResult(int[][][] cellArrayCopy){
-        this.cellArray = cellArrayCopy;
+    /**
+     * Crée une nvelle instance de PassResult avec une copie du cellArray passé en paramètre
+     * @param cellArray
+     * @param nbPasses
+     */
+    public PassResult(int[][][] cellArray){
+        this.cellArray = Grid.cellArrayDeepCopy(cellArray);
         this.nbPasses = 0;
     }
 
@@ -49,7 +47,7 @@ public class PassResult {
      * @return
      */
     public int[][][] getCellArrayCopy(){
-        return Grid.cellArrayDeepCopy(cellArray);
+        return Grid.cellArrayDeepCopy(this.cellArray);
     }
 
     public void setCellArray(int[][][] newCellArray){
@@ -57,10 +55,6 @@ public class PassResult {
     }
 
     // getters & setters pour les flags
-
-    public void resetState() {
-        this.state = PassResult.NULL_STATE;
-    }
 
     public void setDirty(){
         this.state = (char) (this.state | IS_DIRTY);
@@ -70,7 +64,7 @@ public class PassResult {
         this.state = (char) (this.state | HAS_MULTIPLE_CANDIDATES);
     }
 
-    public void setIsUnsolvable(){
+    public void setUnsolvable(){
         this.state = (char) (this.state | IS_UNSOLVABLE);
     }
 
@@ -92,9 +86,8 @@ public class PassResult {
 
     public boolean needsRecursion() {
         if( this.isUnsolvable() ) { return false;} // cas de figure déjà géré normalement, mais bon
-        if( this.hasMultipleCandidates()) { return false;} // toutes les cellules ont été résolues
+        if( !this.hasMultipleCandidates()) { return false;} // toutes les cellules ont été résolues
         if( !this.isDirty()) { return false; } // s'il n'y a eu aucun changement durant cette passe, il n'y en aura pas pendant la prochaine
-        if( this.nbPasses >= PassResult.MAX_PASSES ) { return false;} // cas de figure improbable mais il vaut mieux éviter une boucle infinie par principe
         // si la grille n'est pas résolue, qu'il reste des candidats multiples et qu'il y a eu des changements à la dernière passe, on peut faire un tour de plus
         return true;
     }
@@ -104,12 +97,7 @@ public class PassResult {
         return nbPasses;
     }
 
-    public void setPasses(int newPasses) {
+    public void setNbPasses(int newPasses) {
         this.nbPasses = newPasses;
-    }
-
-    // "Setters" par incrément
-    public void incNbPasses() {
-        this.nbPasses++;
     }
 }

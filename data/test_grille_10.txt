@@ -1,8 +1,8 @@
 # -----------------------
-# Fichier test_grille_06.txt 
+# Fichier test_grille_10.txt 
 # grille utilisée pour les tests JUnit
-# grille invalide : valide pour le parsing mais invalide pour les doublons ligne
-# Doublon de 7 à la ligne 8
+# grille valide avec une seule solution
+# (grille de magazine)
 # -----------------------
 ..97...61
 .21......
@@ -12,9 +12,9 @@
 ..8..9...
 .36.4..2.
 ...3...1.
-.7..7.4..
+.7....4..
 #    
-# -------------------------
+#  -------------------------
 #  |     9 | 7     |   6 1 |
 #  |   2 1 |       |       |
 #  |       | 8     | 3     |
@@ -25,5 +25,5 @@
 #  -------------------------
 #  |   3 6 |   4   |   2   |
 #  |       | 3     |   1   |
-#  |   7   |   7   | 4     |
+#  |   7   |       | 4     |
 #  -------------------------

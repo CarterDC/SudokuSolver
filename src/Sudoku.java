@@ -25,21 +25,23 @@ public class Sudoku {
         // Transforme si possible le fichier fourni en tableau d'int @see #utils.Grid
         Optional<int[][][]> cellArray = Grid.parseGridFile(myArgs.getFileName());
         if (cellArray.isEmpty()) { return; }
-        // a ce point on sait qu'on a bien 9 lignes de 9 cases, composées exclusivement des 9 chiffres
-        // reste a vérifier l'absence de doublons sur chaque ligne, chaque colonne et chaque carré.
         System.out.println("Le fichier fourni contient bien une grille de 9x9 valeurs valides.");  
+        // a ce point on sait qu'on a bien 9 lignes de 9 cases, composées exclusivement des 9 chiffres
+        // reste a vérifier l'absence de doublons sur chaque ligne, chaque colonne et chaque carré.        
 
         if (Grid.hasDuplicates(cellArray.get())) { return; }
-        // à ce point on sait que la grille est valide
-        // reste a vérifier si elle a bien des solutions
         System.out.println("La grille fournie ne contient aucun doublons.");
+        // à ce point on sait que la grille est valide
+        // reste a vérifier si elle a bien des solutions        
 
         //affichage de la grille d'origine pour référence
         System.out.println("\nGrille de depart : \n" + Grid.cellArrayToString(cellArray.get()));
         
-        // Résolution :
+        // Solutionnement :
         // Effectue plusieurs passes successives pour tenter de trouver le nombre de solutions passé en paramètre
-        SolveResult result = Grid.solve(cellArray.get(), myArgs.getNbMaxSolutions());
+        SolveResult result = new SolveResult(cellArray.get(), myArgs.getNbMaxSolutions());
+        Grid.recurseSolve(result);
+
         // Affichage des résultats
         result.displaySolutions();
     }
@@ -59,7 +61,6 @@ public class Sudoku {
 
     // juste pour éviter le warning de javaDoc
     private Sudoku(){}
-
 }
 
 

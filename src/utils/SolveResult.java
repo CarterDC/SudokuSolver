@@ -9,49 +9,55 @@ import java.text.MessageFormat;
  */
 public class SolveResult {
     
-    private int nbMaxSolutions = 0;
-    private Stats stats;
-
-    private boolean needsRecursion = false;
-
     private int[][][][] solutions;
+    public PassResult passResult;
+        
+    private int nbMaxSolutions = 0;
+    // stats
+    private int nbRecursions = -1;
+    private int nbPasses = 0;
+    private int nbUnsolvableGrids = 0;
+    private int nbFailedGrids = 0;
+    private long nbNanoSeconds = 0;
 
-    public SolveResult(int nbMaxSolutions){
+
+    public SolveResult(int[][][] currentCellArray, int nbMaxSolutions){
+        this.passResult = new PassResult(currentCellArray);
         this.nbMaxSolutions = nbMaxSolutions;
-        this.stats = new Stats();
     }
 
-    public SolveResult(int nbMaxSolutions, PassResult passResult, long passTime){
-        this.nbMaxSolutions = nbMaxSolutions;
-        this.stats = new Stats();
+    public void processPassResult() {
+        // TODO : deal with time counter at some point
+        this.nbPasses += this.passResult.getNbPasses();
 
-        this.stats.addNbPasses(passResult.getNbPasses()); 
-        this.stats.addNanoSeconds(passTime);
-
-        if(passResult.isUnsolvable()){
-            this.stats.incNbUnsolvable();
+        if(this.passResult.isUnsolvable()) {
+            this.nbUnsolvableGrids++;
             return;
         }
-        if(passResult.getNbPasses() >= PassResult.MAX_PASSES){
-            this.stats.incNbFailed();
+        if(this.passResult.getNbPasses() >= Grid.MAX_PASS_RECURSIONS){
+            this.nbFailedGrids++;
+            return;
+        }
+        if(this.passResult.isSolved()){
+            this.addSolution(this.passResult.getCellArray());
             return;
         }
 
-        //TODO : check s'il faut vérif la qtté de soluces avant
-        if(passResult.isSolved()){
-            this.addSolution(passResult.getCellArrayCopy());
-            return;
-        }
-        if(passResult.hasMultipleCandidates()){
-            //TODO peut être vérifs ici
-            this.needsRecursion = true;            
-        }
+    }
+
+    public boolean needsRecursion(){
+        
+        if (this.passResult.isUnsolvable()) { return false;}
+        if (this.passResult.getNbPasses() >= Grid.MAX_PASS_RECURSIONS) { return false;}
+        if (this.passResult.isSolved()) { return false;}
+        if (this.isFull()) { return false;}
+        return this.passResult.hasMultipleCandidates() && !this.passResult.isDirty();
     }
 
     public void aggregate(SolveResult otherResult) {
 
         this.nbMaxSolutions = otherResult.nbMaxSolutions; // TODO : virer ça à terme
-        this.stats.aggregate(otherResult.getStats());
+        //this.stats.aggregate(otherResult.getStats());
         // ! On ne copie pas le flag "needsRecursion"
 
         // on aggrége toutes les solutions
@@ -95,26 +101,53 @@ public class SolveResult {
         this.solutions = newSolutions;
     }
 
+    /**
+     * Renvoie l'instance du tableau de solutions
+     * utilisé uniquement par la classe de test ! 
+     * @return int[][][] : un pointeur vers l'instance originale
+     */
+    public int[][][][] getSolutionsInstance() {
+        return this.solutions;
+    }
+    
+    /** 
+     * Revoie une copie de la solution à l'index solutionIndex
+     * @param solutionIndex
+     * @return int[][][] la solution demandée ou bien null si l'index est out of bounds
+     */
+    public int[][][] getSolution(int solutionIndex) {
+        if(solutionIndex <= this.getNbSolutions() - 1) {
+            return Grid.cellArrayDeepCopy(this.solutions[solutionIndex]);
+        } 
+        return null;
+    }
+
+    public int getNbMaxSolutions(){
+        return this.nbMaxSolutions;
+    }
+
     public int getNbSolutions(){
         return this.solutions == null ? 0 : this.solutions.length;
     }
 
-    public Stats getStats(){
-        return this.stats;
+    public void incRecursionCounter() {
+        this.nbRecursions++;
+    }
+
+    public int getRecursionCounter(){
+        return this.nbRecursions;
     }
 
     public boolean isFull(){
         return this.getNbSolutions() >= this.nbMaxSolutions;
     }
 
-    public boolean needsRecursion(){
-        return this.needsRecursion;
-    }
+
 
     /**
      * Affiche la totalité des solutions
      */
-    public void displaySolutions(){ // TODO : pê remplacer par un toString ?
+    public void displaySolutions(){
         int solutionIndex = 0;
         if(this.getNbSolutions() == 0) {
             System.err.println("ERREUR : Il n y a pas de solution a cette grille !");
@@ -128,6 +161,18 @@ public class SolveResult {
         }
 
         // peu importe qu'il y ait des solutions ou pas, on affiche les stats
-        System.out.println("" + this.stats);
+        System.out.println(this.getStats());
+    }
+
+    private String getStats() {
+        String returnString = "Statistiques : ";
+
+        returnString += "\n\t* Nb Recursions : " + this.nbRecursions;
+        returnString += "\n\t* Nb Passes : " + this.nbPasses; 
+        returnString += "\n\t* Nb Impossible a resoudre : " + this.nbUnsolvableGrids;
+        returnString += "\n\t* Nb Abandonnes (> nbPassesMax) : " + this.nbFailedGrids;
+        returnString += "\n\t* Passes ms : " + String.format("%.3f", this.nbNanoSeconds / 1000000.0f);
+
+        return returnString;        
     }
 }

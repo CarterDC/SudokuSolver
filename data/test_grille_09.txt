@@ -1,19 +1,23 @@
 # -----------------------
-# Fichier test_grille_01.txt 
+# Fichier test_grille_09.txt 
 # grille utilisée pour les tests JUnit
-# Grille invalide : le fichier existe mais ne contient que 7 lignes vides non commentées
+# grille impossible à résoudre :
+# Le chiffre 7 ne peut pas être utilisé pour la première ligne 
+# car déjà présent dans la carré 2
 # -----------------------
-
-
-
-
-
-
-
+123456.89
+.6.....37
+.7.....4.
+789123456
+.........
+.........
+456789123
+.........
+.........
 #  les neuf lignes ci-dessus definissent la grille suivante :
 #    -------------------------
-#    | 1 2 3 | 4 5 6 | 7 8 9 |
-#    | . 6 . | . . . | . 3 . |
+#    | 1 2 3 | 4 5 6 | . 8 9 |
+#    | . 6 . | . . . | . 3 7 |
 #    | . 7 . | . . . | . 4 . |
 #    -------------------------
 #    | 7 8 9 | 1 2 3 | 4 5 6 |
