@@ -5,7 +5,7 @@ import java.text.MessageFormat;
 /**
  * Cette classe gère les arguments passés à la fonction main.
  * <p>
- * C'est donc aussi elle qui défini la valeur par défault des arguments optionnels
+ * C'est donc aussi elle qui défini la valeur par défaut des arguments optionnels
  */
 public class Arguments {
 
@@ -53,7 +53,7 @@ public class Arguments {
         } 
 
         /**
-         * Constructeur avec les valeurs par défault
+         * Constructeur avec les valeurs par défaut
          */
         public Arguments(){
             this.fileName = "";
@@ -77,7 +77,7 @@ public class Arguments {
         }
 
         /**
-         * Getter de la variable privée shoudlDisplayHelp
+         * Getter de la variable privée shouldDisplayHelp
          * @return - boolean : est ce qu'il faut afficher l'aide ou pas
          */
         public boolean shouldDisplayHelp() {

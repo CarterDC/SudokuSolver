@@ -1,6 +1,7 @@
 import utils.*;
 
 import java.util.Optional;
+
 /**
  * Classe principale (Main) du programme de résolution de grilles Sudoku
  * <p>
@@ -23,7 +24,7 @@ public class Sudoku {
         if(myArgs.shouldDisplayHelp()) {displayHelp(); return;}
 
         // Transforme si possible le fichier fourni en tableau d'int @see #utils.Grid
-        Optional<int[][][]> cellArray = Grid.parseGridFile(myArgs.getFileName());
+        Optional<int[][][]> cellArray = Grid.parseFileGrid(myArgs.getFileName());
         if (cellArray.isEmpty()) { return; }
         System.out.println("Le fichier fourni contient bien une grille de 9x9 valeurs valides.");  
         // a ce point on sait qu'on a bien 9 lignes de 9 cases, composées exclusivement des 9 chiffres
@@ -52,7 +53,7 @@ public class Sudoku {
                      "        java -jar monSudoku.jar -h | --help\n" +
                      "\n" + 
                      "<file_path> : Le chemin relatif vers un fichier grille au format .txt.\n" +
-                     "<nb_solutions> : Le nombre maximal de solutions a retourner (optionel, 2 par defaut).\n" +
+                     "<nb_solutions> : Le nombre maximal de solutions a retourner (optionnel, 2 par defaut).\n" +
                      "\n" +
                      "-h, --help : Affiche le present message d aide.";
 

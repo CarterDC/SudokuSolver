@@ -1,84 +1,122 @@
 package utils;
 
+import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.UnsupportedCharsetException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.junit.jupiter.api.Test;
-import org.junit.Assert;
 
 /**
  * Classe de test des fonctions / méthodes publiques de la class Grid
  * <p>
  * Les 3 fonctions testées ici sont :
- * Optional<int[][][]> parseGridFile(String fileName)
+ * Optional<int[][][]> parseFileGrid(String fileName)
  * boolean hasDuplicates(int[][][] cellArray)
- * solve
+ * recurseSolve(SolveResult)
  */
 public class GridTest {
 
+    /**
+     * Ce test vérifie que la fonction parseFileGrid gère correctement les noms de fichiers invalides
+     * <p>
+     * parseFileGrid renvoie un int[][][] en temps normal, mais un empty en cas d'erreur.
+     * <p>
+     * Le test s'assure que la fonction renvoie bien un empty quand lancée avec un nom de fichier inexistant
+     */
     @Test
-    public void testParseGridFile_invalidFilename() {
-        // si le nom de fichier n'est pas correct, la fonction doit renvoyer un empty
+    public void testParseFileGrid_invalidFilename() {
         Optional<int[][][]> testResult;
-        testResult = Grid.parseGridFile("fichier_inexistant.txt");
+        testResult = Grid.parseFileGrid("fichier_inexistant.txt");
 
         Assert.assertEquals(testResult, Optional.empty());
     }
 
+    /**
+     * Ce test vérifie que la fonction parseFileGrid gère correctement les fichiers non-conformes
+     * <p>
+     * parseFileGrid renvoie un int[][][] en temps normal, mais un empty en cas d'erreur.
+     * le fichier test_grille_01 ne comporte aucune ligne codante (que des commentaires et des espaces)
+     * <p>
+     * Le test s'assure que la fonction renvoie bien un empty quand lancée avec un fichier vide de toute grille
+     */
     @Test
-    public void testParseGridFile_invalidGrid01() {
-        // le fichier ne comporte aucune ligne codante
+    public void testParseFileGrid_invalidGrid01() {
         Optional<int[][][]> testResult;
-        testResult = Grid.parseGridFile("data\\test_grille_01.txt");
+        testResult = Grid.parseFileGrid("data\\test_grille_01.txt");
 
         Assert.assertEquals(testResult, Optional.empty());
     }
 
+    /**
+     * Ce test vérifie que la fonction parseFileGrid gère correctement les fichiers non-conformes
+     * <p>
+     * parseFileGrid renvoie un int[][][] en temps normal, mais un empty en cas d'erreur.
+     * le fichier test_grille_02 ne comporte que des symboles valides, mais 3 lignes sont incomplètes
+     * <p>
+     * Le test s'assure que la fonction renvoie bien un empty quand la grille est incomplete
+     */
     @Test
-    public void testParseGridFile_invalidGrid02() {
-        // le fichier ne comporte que des symboles valides, mais 3 lignes sont incomplètes
+    public void testParseFileGrid_invalidGrid02() {
         Optional<int[][][]> testResult;
-        testResult = Grid.parseGridFile("data\\test_grille_02.txt");
+        testResult = Grid.parseFileGrid("data\\test_grille_02.txt");
 
         Assert.assertEquals(testResult, Optional.empty());
     }
 
+    /**
+     * Ce test vérifie que la fonction parseFileGrid gère correctement les fichiers non-conformes
+     * <p>
+     * parseFileGrid renvoie un int[][][] en temps normal, mais un empty en cas d'erreur.
+     * le fichier test_grille_03 comporte le bon nombre de lignes et de caractères
+     * mais 2 caractères sont invalides : un chiffre (0) et un espace
+     * <p>
+     * Le test s'assure que la fonction renvoie bien un empty quand la grille comporte des caractères invalides
+     */
     @Test
-    public void testParseGridFile_invalidGrid03() {
-        // le fichier comporte le bon nombre de lignes et de caractères
-        // mais 2 caractères sont invalides : un chiffre (0) et un espace
+    public void testParseFileGrid_invalidGrid03() {
+        // le fichier 
         Optional<int[][][]> testResult;
-        testResult = Grid.parseGridFile("data\\test_grille_03.txt");
+        testResult = Grid.parseFileGrid("data\\test_grille_03.txt");
 
         Assert.assertEquals(testResult, Optional.empty());
     }
 
+    /**
+     * Ce test vérifie que la fonction parseFileGrid gère correctement les fichiers conformes
+     * <p>
+     * parseFileGrid renvoie un int[][][] en temps normal, mais un empty en cas d'erreur.
+     * le fichier test_grille_04 comporte une grille valide dont certaines lignes ont des trailing spaces
+     * <p>
+     * Le test s'assure que la fonction parse cette grille et ne retourne pas un empty 
+     */
     @Test
-    public void testParseGridFile_validGrid01() {
-        // le fichier comporte une grille valide
-        // mais certaines lignes ont des trailing spaces
-        // la fonction ne doit pas renvoyer un empty mais bien un int[][][]
+    public void testParseFileGrid_validGrid01() {
         Optional<int[][][]> testResult;
-        testResult = Grid.parseGridFile("data\\test_grille_04.txt");
+        testResult = Grid.parseFileGrid("data\\test_grille_04.txt");
 
         Assert.assertNotEquals(testResult, Optional.empty());
     }
 
+    /**
+     * Ce test vérifie que la fonction parseFileGrid gère correctement les fichiers conformes
+     * <p>
+     * parseFileGrid renvoie un int[][][] en temps normal
+     * le fichier test_grille_05 comporte une grille parsable dont les valeurs sont connues
+     * <p>
+     * Le test s'assure que la fonction parse cette grille en int[][][] dont chaque valeur est correcte
+     */
     @Test
-    public void testParseGridFile() {
-        // Teste si le parsing d'une grille valide particulière
-        // renvoie bien le bon tableau à 3 dimensions avec les bonnes valeurs
-        // Note : assertArrayEqual n'est pas adapté pour des tableaux de 2+ dimensions
-
+    public void testParseFileGrid() {
         Optional<int[][][]> testResult;
-        testResult = Grid.parseGridFile("data\\test_grille_05.txt");
+        testResult = Grid.parseFileGrid("data\\test_grille_05.txt");
 
         // création du tableau de référence qu'on doit obtenir
         // il doit être composé de 9 lignes de 9 cellules contenant chacune un tableau d'int (int[9][9][x])
@@ -97,30 +135,48 @@ public class GridTest {
         Assert.assertTrue(Arrays.deepEquals(referenceCellArray, testResult.get()));
     }
 
+    /**
+     * Ce test vérifie que la fonction hasDuplicates détecte correctement les doublons
+     * <p>
+     * hasDuplicate renvoie false si tout va bien, mais renvoie true si au moins un doublon a été détecté.
+     * le fichier test_grille_06 comporte une grille parsable qui contient un doublon à la ligne 8
+     * <p>
+     * Le test s'assure que la fonction renvoie bien true lorsqu'il y a des doublons sur une même ligne
+     */
     @Test
     void testHasDuplicates_lineDuplicates() {
-        // Teste la capacité à détecter des doublons dans une grille correctement parsée
-        // la grille contient un doublon sur la ligne d'index 8
         Optional<int[][][]> testCellArray;
-        testCellArray = Grid.parseGridFile("data\\test_grille_06.txt");
+        testCellArray = Grid.parseFileGrid("data\\test_grille_06.txt");
 
         Assert.assertTrue(Grid.hasDuplicates(testCellArray.get()));
     }
 
+    /**
+     * Ce test vérifie que la fonction hasDuplicates détecte correctement les doublons
+     * <p>
+     * hasDuplicate renvoie false si tout va bien, mais renvoie true si au moins un doublon a été détecté.
+     * le fichier test_grille_07 comporte une grille parsable qui contient un doublon à la colonne 8
+     * <p>
+     * Le test s'assure que la fonction renvoie bien true lorsqu'il y a des doublons sur une même colonne
+     */
     @Test
     void testHasDuplicates_columnDuplicates() {
-        // Teste la capacité à détecter des doublons dans une grille correctement parsée
-        // la grille contient un doublon sur la colonne d'index 
         Optional<int[][][]> testCellArray;
-        testCellArray = Grid.parseGridFile("data\\test_grille_07.txt");
+        testCellArray = Grid.parseFileGrid("data\\test_grille_07.txt");
 
         Assert.assertTrue(Grid.hasDuplicates(testCellArray.get()));
     }
-
+    
+    /**
+     * Ce test vérifie que la fonction hasDuplicates détecte correctement les doublons
+     * <p>
+     * hasDuplicate renvoie false si tout va bien, mais renvoie true si au moins un doublon a été détecté.
+     * le fichier test_grille_08 comporte une grille parsable qui contient un doublon dans le carré 8
+     * <p>
+     * Le test s'assure que la fonction renvoie bien true lorsqu'il y a des doublons dans un même carré
+     */
     @Test
     void testHasDuplicates_squareDuplicates() {
-        // Teste la capacité à détecter des doublons dans une grille correctement parsée
-        // la grille contient un doublon dans le carré d'index 
         // Note : L'indexage des carrés au sein de la grille suit la meme convention
         //  que l'indexage des cases dans un carré :
         //  0 1 2
@@ -128,19 +184,25 @@ public class GridTest {
         //  6 7 8
 
         Optional<int[][][]> testCellArray;
-        testCellArray = Grid.parseGridFile("data\\test_grille_08.txt");
+        testCellArray = Grid.parseFileGrid("data\\test_grille_08.txt");
 
         Assert.assertTrue(Grid.hasDuplicates(testCellArray.get()));
     }
 
+    /**
+     * Ce test vérifie que la fonction recurseSolve gère correctement les grilles impossibles
+     * <p>
+     * recurseSolve résout les grilles et renvoie entre 0 et nbMaxSolutions solutions
+     * le fichier test_grille_09 comporte une grille parsable et sans doublon, mais qui ne peut pas être résolue
+     * (cas où la seule valeur possible pour une cellule provoquerait un doublon)
+     * <p>
+     * Le test s'assure que la fonction ne trouve aucune solution à une grille impossible
+     */
     @Test
     void testSolve_noSolution() {
-        // test d'une grille impossible
-        // grille valide, sans doublons, mais avec une impossibilité selon les règles
-        // cas où la seule valeur possible provoquerait un doublon
         int nbMaxSolutions = 2;
         Optional<int[][][]> testCellArray;
-        testCellArray = Grid.parseGridFile("data\\test_grille_09.txt");
+        testCellArray = Grid.parseFileGrid("data\\test_grille_09.txt");
 
         // on vérifie que la grille échappe bien à la vérification des doublons
         Assert.assertFalse(Grid.hasDuplicates(testCellArray.get()));
@@ -152,42 +214,58 @@ public class GridTest {
         Assert.assertTrue(testResult.getNbSolutions() == 0);
     }
 
+    /**
+     * Ce test vérifie que la fonction recurseSolve gère correctement les grilles a une solution
+     * <p>
+     * recurseSolve résout les grilles et renvoie entre 0 et nbMaxSolutions solutions
+     * le fichier test_grille_10 comporte une grille classique de magazine, ne permettant qu'une solution unique
+     * (test_grille_10_soluce contient sa solution sous forme parsable)
+     * <p>
+     * Le test s'assure que la fonction ne trouve bien qu'une seule solution et que cette solution est bien la bonne
+     */
     @Test
     void testSolve_monoSolution() {
         // test de grille de magazine classique => une seule solution possible
         int nbMaxSolutions = 2;
         Optional<int[][][]> testCellArray;
-        testCellArray = Grid.parseGridFile("data\\test_grille_10.txt");
+        testCellArray = Grid.parseFileGrid("data\\test_grille_10.txt");
         Assert.assertFalse(Grid.hasDuplicates(testCellArray.get()));
 
         SolveResult testResult = new SolveResult(testCellArray.get(), nbMaxSolutions);
         Grid.recurseSolve(testResult);
         
-        // on vérifie qu'il n'y a bien qu'une seule solution (malgré qu'on en a demandé 2)
+        // on vérifie qu'il n'y a bien qu'une seule solution (malgré qu'on en a demandé 2 au max)
         Assert.assertTrue(testResult.getNbSolutions() == 1);
         // on vérifie que c'est la bonne solution
-        Optional<int[][][]> referenceCellArray = Grid.parseGridFile("data\\test_grille_10_soluce.txt");
+        Optional<int[][][]> referenceCellArray = Grid.parseFileGrid("data\\test_grille_10_soluce.txt");
 
         Assert.assertTrue(Arrays.deepEquals(referenceCellArray.get(), testResult.getSolution(0)));
     }
 
+    /**
+     * Ce test vérifie que la fonction recurseSolve gère correctement les grilles a solutions multiples
+     * <p>
+     * recurseSolve résout les grilles et renvoie entre 0 et nbMaxSolutions solutions
+     * le fichier test_grille_vide comporte une grille vide, avec donc 6x10^21 solutions possibles
+     * <p>
+     * Le test s'assure que la fonction ne trouve bien le nombre maximum de solutions demandées
+     * Il vérifie aussi que chacune des solutions trouvées est une grille valide (qu'il n'y a pas eu d'erreur dans sa conception)
+     * Il vérifie aussi que chacune des solutions trouvées est bien unique
+     */
     @Test
     void testSolve_multipleSolutions() throws NoSuchAlgorithmException, UnsupportedEncodingException {
         // test de grille a multiples solutions possibles
         int nbMaxSolutions = 3000;
         Optional<int[][][]> testCellArray;
-        // testCellArray = Grid.parseGridFile("data\\test_grille_vide.txt");
-        testCellArray = Grid.parseGridFile("grille1.txt");
+        testCellArray = Grid.parseFileGrid("data\\test_grille_vide.txt");
         // Pas vraiment besoin de test de doublons sur une grille vide...
         Assert.assertFalse(Grid.hasDuplicates(testCellArray.get()));
 
         SolveResult testResult = new SolveResult(testCellArray.get(), nbMaxSolutions);
         Grid.recurseSolve(testResult);
 
-        // on vérifie s'il y a bien, au minimum 1 solution
-        // et au maximum, le nombre de solutions demandées
-        Assert.assertTrue(testResult.getNbSolutions() >= 1);
-        Assert.assertTrue(testResult.getNbSolutions() <= nbMaxSolutions);
+        // on vérifie qu'il y a bien exactement le nombre de solutions demandées
+        Assert.assertTrue(testResult.getNbSolutions() == nbMaxSolutions);
 
         // on vérifie que chaque solution est conforme aux règles
         // (aucun doublon de ligne de colonne ou de carré)
@@ -201,8 +279,11 @@ public class GridTest {
         }
     
         // on vérifie que chaque solution est bien unique
-        // pour ça on va calculer un "deephash" (sinon ça ne prend pas en compte le contenu du tableau)
+        // pour ça on va calculer un hash
         // et tenter de l'ajouter dans un set (qui ne peut contenir que des valeurs uniques)
+        // Note : la fonction deepHash utilisée à l'origine n'encode que sur 32 bits 
+        // et provoque un grand nombre de collisions dès les premiers milliers de solutions
+        // d'où l'utilisation d'un SHA256 à la place. 
         Set<String> hashes = new HashSet<>();
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         solutionIndex = 0;
@@ -219,6 +300,13 @@ public class GridTest {
         }
     }
 
+    /**
+     * Transforme un tableau de char en une chaîne hexadécimale
+     * Fonction copié-collée depuis Copilot pour completer le hash en sha 
+     * au lieu d'un simple int32 Arrays.deepHash
+     * @param hash
+     * @return
+     */
     private static String bytesToHex(byte[] hash) {
         StringBuilder hexString = new StringBuilder(2 * hash.length);
         for (int i = 0; i < hash.length; i++) {

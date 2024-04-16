@@ -20,9 +20,9 @@ import java.util.regex.*;
  */
 public class Grid {
     /**
-     * Le nombre maximum de passes récursives autorisées, pour éviter le risque de boucle infinie.
+     * Le nombre maximum de passes récursives autorisées, pour éviter un risque de boucle infinie.
      */
-    public static final int MAX_PASS_RECURSIONS = 81; // arbitraire, certainement pas necessaire et sur-évalué 
+    public static final int MAX_RECURSION_DEPTH = 81; // arbitraire, certainement pas nécessaire et sur-évalué 
 
     // Pour empêcher l'instanciation
     private Grid(){}
@@ -45,39 +45,25 @@ public class Grid {
     }
 
     /**
-     * // TODO : remettre commentaires a jour
      * Parse, si possible, un fichier "grille" en tableau d'int de 9x9.
-     * Ne renvoie un int[][] uniquement que si le fichier a bien été trouvé
-     * et qu'il contient exactement 9 lignes codants pour une grille de sudoku
-     * renvoie un empty() sinon
+     * <p>
+     * Renvoie un cellArray (int[][][]) si le fichier a bien été trouvé
+     * et qu'il contient exactement 9 lignes de 9 caractères valides
+     * Renvoie un empty() dans tous les autres cas.
      * 
      * @param fileName : le "chemin relatif + nom + extension" du fichier à parser,
      *                 ex : "data\grille_1_1.txt"
-     * @return int[][] | Optional.empty()
+     * @return un cellArray( int[][][] ) ou empty()
      */
-    public static Optional<int[][][]> parseGridFile(String fileName) {
-        //
+    public static Optional<int[][][]> parseFileGrid(String fileName) {
         int[][][] cellArray = new int[9][9][];
 
         try (Scanner fileScanner = new Scanner(new File(fileName))) {
             int lineIndex = 0;
             while (fileScanner.hasNextLine()) {
-                // on lit une ligne sans les trailing spaces 
-                String fileLine = fileScanner.nextLine().trim();
-                if (isValidFileLine(fileLine)) {
-                    // la ligne extraite contient exactement 9 caractères valides (1 à 9 + ".")
-                    // on la parse caractère par caractère
-                    int columnIndex = 0;
-                    for (char myChar : fileLine.toCharArray()) {
-                        // Note : getNumericValue(".") renvoie -1
-                        int numericChar = Character.getNumericValue(myChar);
-                        if (numericChar == -1) {
-                            cellArray[lineIndex][columnIndex] = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-                        } else {
-                            cellArray[lineIndex][columnIndex] = new int[] { numericChar };
-                        }
-                        columnIndex++;
-                    }
+                Optional<int[][]> gridLine = parseFileLine(fileScanner.nextLine().trim());
+                if(!gridLine.isEmpty()){
+                    cellArray[lineIndex] = gridLine.get();
                     lineIndex++;
                 }
             }
@@ -102,6 +88,35 @@ public class Grid {
         }
 
         return Optional.of(cellArray);
+    }
+
+    /** 
+     * Parse une ligne extraite d'un fichier ssi cette dernière est valide
+     * <p>
+     * Le tableau renvoyé représente 9 cellules d'une ligne pouvant chacune contenir,
+     * soit la valeur parsée depuis le fichier, de [1] à [9], 
+     * soit un tableau de tous les candidats possibles si aucune valeur n'est fournie ('.')  
+     * @param fileLine
+     * @return Optional<int[][]> une ligne d'un cellArray ou empty()
+     */
+    private static Optional<int[][]> parseFileLine(String fileLine) {
+        if ( !isValidFileLine(fileLine)) { return Optional.empty();}
+        // la ligne extraite contient exactement 9 caractères valides (1 à 9 + ".")
+        // on peut la parser caractère par caractère
+        int[][] gridLine = new int[9][];
+            
+        int columnIndex = 0;
+        for (char myChar : fileLine.toCharArray()) {
+            int numericChar = Character.getNumericValue(myChar);
+            // Note : getNumericValue(".") renvoie -1
+            if (numericChar == -1) {
+                gridLine[columnIndex] = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            } else {
+                gridLine[columnIndex] = new int[] { numericChar };
+            }
+            columnIndex++;
+        }
+        return Optional.of(gridLine);
     }
 
     /**
@@ -158,8 +173,8 @@ public class Grid {
         } catch (CustomException e) {
             // on indique bien qu'il ya des doublons
             hasDuplicates = true;
-            String errMsg = MessageFormat.format("ERREUR : {0} numero {1}, doublon de {2} !", e.myArgs[0], e.myArgs[1],
-                    e.myArgs[2]);
+            String errMsg = MessageFormat.format("ERREUR : {0} numero {1}, doublon de {2} !", e.errArgs[0], e.errArgs[1],
+                    e.errArgs[2]);
             System.err.println(errMsg);
         }
         return hasDuplicates;
@@ -179,24 +194,7 @@ public class Grid {
         SQUARE // 2
     }
 
-    /**
-     * Calcule et renvoie l'index du carré qui contient la cellule définie par
-     * les coordonnées (lineIndex, columnIndex).
-     * Note : L'indexage des carrés au sein de la grille suit la meme convention
-     * que l'indexage des cases dans un carré :
-     * 0 1 2
-     * 3 4 5
-     * 6 7 8
-     * 
-     * @param lineIndex   : un numéro de ligne entre 0 et 8
-     * @param columnIndex : un numéro de colonne entre 0 et 8
-     * @return int : un index de carré entre 0 et 8
-     */
-    private static int getSquareIndex(int lineIndex, int columnIndex) {
-        return (lineIndex / 3) * 3 + columnIndex / 3;
-    }
-
-    /**
+     /**
      * Retourne la liste des chiffres définitivement placés d'une ligne en
      * particulier
      * Les cellules contenant des candidats multiples ne sont pas prises en compte
@@ -332,7 +330,8 @@ public class Grid {
                 myFilter = getColumnFilter(cellArray, columnIndex);
                 break;
             default: // case SQUARE:
-                myFilter = getSquareFilter(cellArray, getSquareIndex(lineIndex, columnIndex));
+                int squareIndex = (lineIndex / 3) * 3 + columnIndex / 3;
+                myFilter = getSquareFilter(cellArray, squareIndex);
                 break;
         }
         return myFilter;
@@ -420,10 +419,11 @@ public class Grid {
     }
     
     /** 
-     * TODO : refaire les comments
-     * Effectue une passe sur un tableau de cellules et renvoie une instance de "Résultat de la passe"
-     * Une passe passe en revue successivement chaque ligne, colonne et carré
-     * pour réduire le nombre de candidats possibles et placer des chiffres de façon définitive
+     * Solutionne une grille donnée en faisant des passes successives en récursion
+     * <p>
+     * Chaque successive passe tente de réduire le nombre de candidats possibles pour chaque cellule
+     * La récursion se termine lorsque la grille est solutionnée, qu'elle est jugée impossible,
+     * qu'aucune réduction n'a été effectuée à ce tour ou qu'on a dépassé la profondeur de récursion maximum
      * 
      * @param currentCellArray
      * @return PassResult
@@ -437,11 +437,11 @@ public class Grid {
         for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
             for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
                 int nbCurrentCandidates = newCellArray[lineIndex][columnIndex].length;
-                if ( nbCurrentCandidates > 1 ) {
-                    // on ne vérifie que les cellules contenant de multiples candidats (length > 1)
+                // on ne vérifie que les cellules contenant de multiples candidats
+                if ( nbCurrentCandidates > 1 ) {                                    
                     int[] newCandidates = getNewCandidates(newCellArray, lineIndex, columnIndex);
                     if ( newCandidates.length == 0 ) {
-                        newPassResult.setUnsolvable();                        
+                        newPassResult.setIsUnsolvable();                        
                         return newPassResult;
                     }
                     if (newCandidates.length > 1) {
@@ -450,7 +450,7 @@ public class Grid {
                     }
                     if (newCandidates.length != nbCurrentCandidates ) {
                         // on indique qu'il ya eu (au moins) une modification du tableau durant cette passe
-                        newPassResult.setDirty();
+                        newPassResult.setIsDirty();
                         // on mets à jour la liste des candidats
                         newCellArray[lineIndex][columnIndex] = newCandidates;                        
                     }
@@ -458,8 +458,8 @@ public class Grid {
                 }
             }
         }
-
-        if (newPassResult.needsRecursion() && recursionCounter < Grid.MAX_PASS_RECURSIONS) {
+        // une passe vient d'être terminée, on peut avoir besoin d'une nouvelle, dans la limite de récursion 
+        if (newPassResult.needsRecursion() && recursionCounter < Grid.MAX_RECURSION_DEPTH) {
             recursionCounter++;
             return recursePass(newPassResult, recursionCounter);
         }
@@ -489,67 +489,49 @@ public class Grid {
 
         return newCandidates;
     }
-
+    
+    /** 
+     * Explore différents embranchements d"une grille de façon récursive, à la recherche de solutions valides
+     * <P>
+     * Effectue une passe récursive pour tenter de solutionner la grille courrante,
+     * Si la grille nécessite une récursion supplémentaire, crée un embranchement
+     * et explore successivement chaque branche si si nécessaire
+     * @param solveResult l'objet contenant les différentes solutions ainsi que les statistiques d'execution
+     */
     public static void recurseSolve(SolveResult solveResult) {
         solveResult.incRecursionCounter();
 
-        long startingTime = System.nanoTime();
-        solveResult.passResult = recursePass(solveResult.passResult, 0);
-        long endingTime = System.nanoTime();
+        solveResult.startTimer();
+        solveResult.setCurrentPassResult(recursePass(solveResult.getCurrentPassResult(), 0));
+        solveResult.stopTimer();
 
         //faire le process du passResult pour déterminer la prochaine action, return ou recurse
         solveResult.processPassResult();
 
         if (solveResult.needsRecursion()) {
-            // 
-            int[][][][] cellArrayFork = createFork(solveResult.passResult.getCellArray());
-            solveResult.passResult.setCellArray(cellArrayFork[0]);
+            // Crée un embranchement et en explore la première branche
+            int[][][][] cellArrayFork = createFork(solveResult.getCurrentPassResult().getCellArray());
+            PassResult firstFork = new PassResult(cellArrayFork[0]);
+            solveResult.setCurrentPassResult(firstFork);
             Grid.recurseSolve(solveResult);
             // vérif si on a notre nbre de soluces
             if (!solveResult.isFull()) {
-                // on n'a pas atteint notre quota de soluces, on continue avec le second embranchement
-                solveResult.passResult.setCellArray(cellArrayFork[1]);
+                // on n'a pas atteint notre quota de soluces, on explore le second embranchement
+                PassResult secondFork = new PassResult(cellArrayFork[1]);
+                solveResult.setCurrentPassResult(secondFork);
                 Grid.recurseSolve(solveResult);
             }
         }
         return;
     }
 
-    /*
-    public static SolveResult solve(int[][][] cellArray, int nbMaxSolutions) {
-        //TODO : Refactor this shit !
-        long startingTime = System.nanoTime();
-        
-        PassResult passResult = recursePass(new PassResult(cellArray), 0);
-
-        long endingTime = System.nanoTime();        
-        SolveResult result = new SolveResult(nbMaxSolutions, passResult, endingTime - startingTime);
-
-        if (result.needsRecursion()) {
-            // trouver la premiere case avec multiples candidats
-            // faire une soluce avec la première valeur.
-            // faire une soluce avec toutes les autres.
-            int[][][] currentCellArray = passResult.getCellArray();
-            int[] coords = getFirstForkPoint(currentCellArray);
-            int[] currentCandidates = currentCellArray[coords[0]][coords[1]];
-
-            int[][][] newCellArray = cellArrayDeepCopy(currentCellArray);
-            newCellArray[coords[0]][coords[1]] = new int[] { currentCandidates[0] };
-            // lancer une solve avec ce cellArray
-            result.aggregate(solve(newCellArray, nbMaxSolutions));
-            // vérif si on a notre nbre de soluces
-            if (!result.isFull()) {
-                //on n'a pas atteint notre quota de soluces, on continue avec le reste
-                // second cellArray
-                newCellArray = cellArrayDeepCopy(currentCellArray);
-                int[] remainder = Arrays.copyOfRange(currentCandidates, 1, currentCandidates.length);
-                newCellArray[coords[0]][coords[1]] = remainder;
-                result.aggregate(solve(newCellArray, nbMaxSolutions));
-            }
-        }
-        return result;
-    }*/
-
+    /** 
+     * Renvoie les deux cellArrays qui constituent le premier embranchement possible dans le tableau fourni
+     * <p>
+     * Un embranchement doit être créé lorsqu'il reste plusieurs candidats dans une cellule à la fin d'une passe récursive.
+     * @param cellArrayToSplit
+     * @return int[][][][] un tableau contenant 2 cellArrays
+     */
     private static int[][][][] createFork(int[][][] cellArrayToSplit) {
         // création du tableau d'embranchement
         int[][][][] cellArrayFork = new int[2][][][];
@@ -594,7 +576,7 @@ public class Grid {
     }
     
     /** 
-     * Renvoie une string contenant une grille prete à afficher
+     * Renvoie une string contenant une grille prête à afficher
      * <p>
      * Les cellules indéterminées (contenant plusieurs candidats potentiels) sont affichées avec un "." 
      * @param cellArray la grille à afficher
@@ -605,7 +587,7 @@ public class Grid {
 
         returnString += " -------------------------";
         for (int lineIndex = 0; lineIndex < 9; lineIndex++) {
-            // création d'une ligne caractere par caractere
+            // création d'une ligne caractère par caractère
             String lineString = "\n |";
             for (int columnIndex = 0; columnIndex < 9; columnIndex++) {
                 String myChar = (cellArray[lineIndex][columnIndex].length == 1)
