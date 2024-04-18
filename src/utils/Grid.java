@@ -502,11 +502,23 @@ public class Grid {
         solveResult.incRecursionCounter();
 
         solveResult.startTimer();
-        solveResult.setCurrentPassResult(recursePass(solveResult.getCurrentPassResult(), 0));
+        PassResult currentPassResult = recursePass(solveResult.getCurrentPassResult(), 0);
+        solveResult.setCurrentPassResult(currentPassResult);
         solveResult.stopTimer();
 
-        //faire le process du passResult pour déterminer la prochaine action, return ou recurse
-        solveResult.processPassResult();
+        //Process du passResult pour déterminer la prochaine action : return ou recurse
+        if(currentPassResult.isUnsolvable()) {
+            solveResult.incNbUnsolvableGrids();
+            return;
+        }
+        if(currentPassResult.getNbPasses() >= Grid.MAX_RECURSION_DEPTH){
+            solveResult.incNbFailedGrids();
+            return;
+        }
+        if(currentPassResult.isSolved()){
+            solveResult.addSolution(currentPassResult.getCellArray());
+            return;
+        }
 
         if (solveResult.needsRecursion()) {
             // Crée un embranchement et en explore la première branche

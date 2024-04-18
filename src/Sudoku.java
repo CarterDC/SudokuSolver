@@ -47,6 +47,9 @@ public class Sudoku {
         result.displaySolutions();
     }
 
+    /**
+     * Affiche l'aide du programme dans le terminal
+     */
     private static void displayHelp(){
         String helpString;
         helpString = "Usage : java -jar monSudoku.jar <file_path> [<nb_solutions>]\n" +

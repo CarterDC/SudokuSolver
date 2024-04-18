@@ -30,26 +30,9 @@ public class SolveResult {
         this.nbMaxSolutions = nbMaxSolutions;
     }
 
-    public void processPassResult() {
-
-        this.nbPasses += this.currentPassResult.getNbPasses();
-
-        if(this.currentPassResult.isUnsolvable()) {
-            this.nbUnsolvableGrids++;
-            return;
-        }
-        if(this.currentPassResult.getNbPasses() >= Grid.MAX_RECURSION_DEPTH){
-            this.nbFailedGrids++;
-            return;
-        }
-        if(this.currentPassResult.isSolved()){
-            this.addSolution(this.currentPassResult.getCellArray());
-            return;
-        }
-    }
-    
     /** 
-     * Ajoute une nouvelle solution en recréant un nnouveau tableau. 
+     * Ajoute une nouvelle solution en recréant un nouveau tableau.
+     * TODO : pê utiliser une liste récursive plutot qu'un array ? 
      * @param cellArray
      */
     public void addSolution(int[][][] cellArray){
@@ -72,7 +55,7 @@ public class SolveResult {
     }
 
     /**
-     * 
+     * Cumule le temps écoulé avec la durée des passes précédentes 
      */
     public void stopTimer() {
         long elapsedTime = System.nanoTime() - this.startingTime;
@@ -126,11 +109,15 @@ public class SolveResult {
     private String getStats() {
         String returnString = "Statistiques : ";
 
-        returnString += "\n\t* Nb Recursions : " + this.nbRecursions;
-        returnString += "\n\t* Nb Passes : " + this.nbPasses;
-        returnString += "\n\t* Duree totale des passes (ms) : " + String.format("%.3f", this.nbNanoSeconds / 1000000.0f);
-        returnString += "\n\t* Nb Impossible a resoudre : " + this.nbUnsolvableGrids;
-        returnString += "\n\t* Nb Abandonnes (> max_recursion_depth) : " + this.nbFailedGrids;        
+        returnString += "\n\t* " + this.getNbSolutions() + " solution(s) trouvee(s)";
+        returnString += "\n\t* sur " + this.nbMaxSolutions + " solution(s) demandee(s)";
+        returnString += "\n\t* grace a " + this.nbPasses + " passes";
+        returnString += "\n\t* realisees en " + String.format("%.3f", this.nbNanoSeconds / 1000000.0f) +" millisecondes";
+        returnString += "\n\t* reparties sur l exploration de " + this.nbRecursions + " embranchement(s)";
+        
+        
+        returnString += "\n\t* dont " + this.nbUnsolvableGrids + " etaient impossible a resoudre";
+        returnString += "\n\t* et dont " + this.nbFailedGrids + " ont ete abandonnes (pour depassement de la profondeur de recursion maximale).";        
 
         return returnString;        
     }
@@ -182,6 +169,14 @@ public class SolveResult {
 
     public void incRecursionCounter() {
         this.nbRecursions++;
+    }
+
+    public void incNbUnsolvableGrids() {
+        this.nbUnsolvableGrids++;
+    }
+
+    public void incNbFailedGrids() {
+        this.nbFailedGrids++;
     }
 
     public boolean isFull(){

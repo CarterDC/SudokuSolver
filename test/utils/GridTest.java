@@ -255,7 +255,7 @@ public class GridTest {
     @Test
     void testSolve_multipleSolutions() throws NoSuchAlgorithmException, UnsupportedEncodingException {
         // test de grille a multiples solutions possibles
-        int nbMaxSolutions = 3000;
+        int nbMaxSolutions = 6671; // un milliardième de milliardième des combinaisons existantes
         Optional<int[][][]> testCellArray;
         testCellArray = Grid.parseFileGrid("data\\test_grille_vide.txt");
         // Pas vraiment besoin de test de doublons sur une grille vide...
