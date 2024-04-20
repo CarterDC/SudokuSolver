@@ -40,12 +40,14 @@ public class Arguments {
                     // l'utilisateur a passé un ou plusieur paramètres optionnels
                     // on ne s'occupe que du premier, qui doit être un int (nbMaxSoluces)
                     try{
-                        myArgs.nbMaxSolutions = Integer.parseInt(args[1]);    
+                        myArgs.nbMaxSolutions = Integer.parseInt(args[1]);  
+                        if(myArgs.nbMaxSolutions == 0) { throw new NumberFormatException("");}  
                     } catch(NumberFormatException e) {
                         String errMsg = MessageFormat.format(
                             "ERREUR : {0} n est pas une valeur valide ! Utilisation du defaut {1}.",
                              args[1], Arguments.MAX_SOLUTIONS_DEFAULT);
                         System.err.println(errMsg);
+                        myArgs.nbMaxSolutions = Arguments.MAX_SOLUTIONS_DEFAULT;
                     }                    
                 }
             }

@@ -1,6 +1,7 @@
 # -----------------------
-# Fichier grille_inkala.txt
-# -- Fichier de définition d'une grille de sudoku
+# Fichier grille_inkala.txt 
+# grille valide à 1 solution
+# crée par le mathématicien finlandais Arto Inkala
 # -----------------------
 8........
 ..36.....

@@ -1,6 +1,6 @@
 # -----------------------
-# Fichier grille_1_1.txt
-# -- Fichier de définition d'une grille de sudoku
+# Fichier grille_commerce_01.txt 
+# grille valide issue d'un magazine
 # -----------------------
 31..847.6
 .491.7.3.

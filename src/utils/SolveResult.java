@@ -5,33 +5,65 @@ import java.text.MessageFormat;
 /**
  * Classe qui compile les solutions trouvées ainsi que les statistiques d'execution
  * <p>
- * 
+ * L'instance de SolveResult maintient aussi un lien vers l'embranchement (instance de PassResult) en cours d'exploration
  */
 public class SolveResult {
     
-    private int[][][][] solutions;
+    private int nbMaxSolutions = 0; // le nb de soluces demandé par l'utilisateur 
     private PassResult currentPassResult; // l'embranchement exploré en cours
 
-    // le nb de soluces demandé par l'utilisateur    
-    private int nbMaxSolutions = 0; 
+    private int[][][][] solutions;
 
     // stats
-    private int nbRecursions = -1;
+    public int nbRecursions = -1;
     private int nbPasses = 0;
     private int nbUnsolvableGrids = 0;
     private int nbFailedGrids = 0;
     private long nbNanoSeconds = 0;
 
-    private long startingTime; 
+    private long startingTime;
 
-
+    /**
+     * Constructeur
+     * @param currentCellArray
+     * @param nbMaxSolutions
+     */
     public SolveResult(int[][][] currentCellArray, int nbMaxSolutions){
         this.currentPassResult = new PassResult(currentCellArray);
         this.nbMaxSolutions = nbMaxSolutions;
     }
 
+    /**
+     * Mets à jour l'instance du passResult, les stats et les solutions
+     * <p>
+     *  
+     * @param newPassResult
+     */
+    public void updatePassResult(PassResult newPassResult){
+        // mets à jour le passResult courant
+        setCurrentPassResult(newPassResult);
+
+        // mets à jour les stats
+        addNbPasses(this.currentPassResult.getNbPasses());
+        if(currentPassResult.isUnsolvable()) {
+            incNbUnsolvableGrids();
+            return;
+        }
+        if(currentPassResult.getNbPasses() >= Grid.MAX_RECURSION_DEPTH){
+            incNbFailedGrids();
+            return;
+        }
+
+        // mets à jour les solutions si besoin
+        if(currentPassResult.isSolved()){
+            addSolution(this.currentPassResult.getCellArray());
+            return;
+        }
+    }
+
     /** 
      * Ajoute une nouvelle solution en recréant un nouveau tableau.
+     * <p>
      * TODO : pê utiliser une liste récursive plutot qu'un array ? 
      * @param cellArray
      */
@@ -63,11 +95,11 @@ public class SolveResult {
     }    
 
     /**
-     * Decide si la grille courrante a besoin d'une récursion supplémentaire pour trouver des solutions.
+     * Decide si la grille courante a besoin d'une récursion supplémentaire pour trouver des solutions.
      * <p>
-     * Si la grille n'a pas de solution, qu'on a dépassé la profondeur maxi de récursion, qu'on a solutionné la grille
-     * ou bien qu'on a notre quota de solutions demandées, il n'y a pas besoin de récursion.
-     * On aura besoin de créer un embranchement seulement s'il existe au moins une cellule contenant de multiples candidats
+     * Si la grille n'a pas de solution, qu'on a dépassé la profondeur maxi de récursion, qu'on a solutionné la grille<br>
+     * ou bien qu'on a notre quota de solutions demandées, il n'y a pas besoin de récursion.<br>
+     * On aura besoin de créer un embranchement seulement s'il existe au moins une cellule contenant de multiples candidats<br>
      * 
      * @return boolean 
      */
@@ -127,7 +159,7 @@ public class SolveResult {
      **********************************************/
 
     /**
-     * Retourne l'instance du passResult courrant
+     * Retourne l'instance du passResult courant
      * @return
      */
     public PassResult getCurrentPassResult(){
@@ -135,7 +167,7 @@ public class SolveResult {
     }
 
     /**
-     * Remplace l'instance de passResult courrante par une nouvelle
+     * Remplace l'instance de passResult courante par une nouvelle
      * @param newPassResult
      */
     public void setCurrentPassResult(PassResult newPassResult){
@@ -144,6 +176,7 @@ public class SolveResult {
 
     /**
      * Renvoie l'instance du tableau de solutions
+     * <p>
      * utilisé uniquement par la classe de test ! 
      * @return int[][][] : un pointeur vers l'instance originale
      */
@@ -153,6 +186,7 @@ public class SolveResult {
     
     /** 
      * Revoie une copie de la solution à l'index solutionIndex
+     * <p>
      * @param solutionIndex
      * @return int[][][] la solution demandée ou bien null si l'index est out of bounds
      */
@@ -163,23 +197,49 @@ public class SolveResult {
         return null;
     }
 
+    /**
+     * Renvoie le nb de solutions déjà trouvées
+     * @return
+     */
     public int getNbSolutions(){
         return this.solutions == null ? 0 : this.solutions.length;
     }
 
+    /**
+     * Renvoie si oui ou non on a atteint le quota de solution demandé
+     * @return boolean 
+     */
+    public boolean isFull(){
+        return this.getNbSolutions() >= this.nbMaxSolutions;
+    }
+
+    /**
+     * Setter par ajout du nb de passes
+     */
+    public void addNbPasses( int nbPassesToAdd) {
+        this.nbPasses += nbPassesToAdd;
+    }
+    
+    /**
+     * Setter par incrément du nb de récursions
+     */
     public void incRecursionCounter() {
         this.nbRecursions++;
     }
 
+    /**
+     * Setter par incrément du nb de grilles non solvables
+     */
     public void incNbUnsolvableGrids() {
         this.nbUnsolvableGrids++;
     }
 
+    /**
+     * Setter par incrément du nb de grilles échouées
+     */
     public void incNbFailedGrids() {
         this.nbFailedGrids++;
     }
 
-    public boolean isFull(){
-        return this.getNbSolutions() >= this.nbMaxSolutions;
-    }
+
 }

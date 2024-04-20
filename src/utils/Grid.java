@@ -11,10 +11,10 @@ import java.util.regex.*;
 
 /**
  * La classe Grid est une collection de méthodes statiques qui permettent la résolution de grilles de sudoku.
- * 
- * Le concept de "cellArray" est beaucoup utilisé et correspond à un tableau d'int à 3 dimensions.
+ * <p>
+ * Le concept de "cellArray" est beaucoup utilisé et correspond à un tableau d'int à 3 dimensions.<br>
  * soit 2 dimensions pour la "grille" de 9x9 
- * et la dernière dimension pour symboliser une "cellule" pouvant contenir plusieurs valeurs "candidats" potentielles. 
+ * et la dernière dimension pour symboliser une "cellule" pouvant contenir plusieurs valeurs "candidats" potentielles.<br> 
  * 
  * Note : Cette classe ne peut pas être instanciée.
  */
@@ -24,7 +24,11 @@ public class Grid {
      */
     public static final int MAX_RECURSION_DEPTH = 81; // arbitraire, certainement pas nécessaire et sur-évalué 
 
-    // Pour empêcher l'instanciation
+    /**
+     * Constructeur privé pour empêcher l'instanciation
+     * <p>
+     * classe ne contenant que des méthodes purement statiques
+     */
     private Grid(){}
 
     /**********************************************
@@ -69,8 +73,7 @@ public class Grid {
             }
             fileScanner.close();
 
-            // une grille de sudoku n'est valide que si elle contient exactement 9 lignes
-            // valides
+            // une grille de sudoku n'est valide que si elle contient exactement 9 lignes valides
             if (lineIndex != 9) {
                 throw new CustomException("" + lineIndex);
             }
@@ -441,7 +444,7 @@ public class Grid {
                 if ( nbCurrentCandidates > 1 ) {                                    
                     int[] newCandidates = getNewCandidates(newCellArray, lineIndex, columnIndex);
                     if ( newCandidates.length == 0 ) {
-                        newPassResult.setIsUnsolvable();                        
+                        newPassResult.setIsUnsolvable();    
                         return newPassResult;
                     }
                     if (newCandidates.length > 1) {
@@ -493,7 +496,7 @@ public class Grid {
     /** 
      * Explore différents embranchements d"une grille de façon récursive, à la recherche de solutions valides
      * <P>
-     * Effectue une passe récursive pour tenter de solutionner la grille courrante,
+     * Effectue une passe récursive pour tenter de solutionner la grille courante,
      * Si la grille nécessite une récursion supplémentaire, crée un embranchement
      * et explore successivement chaque branche si si nécessaire
      * @param solveResult l'objet contenant les différentes solutions ainsi que les statistiques d'execution
@@ -503,22 +506,8 @@ public class Grid {
 
         solveResult.startTimer();
         PassResult currentPassResult = recursePass(solveResult.getCurrentPassResult(), 0);
-        solveResult.setCurrentPassResult(currentPassResult);
+        solveResult.updatePassResult(currentPassResult);
         solveResult.stopTimer();
-
-        //Process du passResult pour déterminer la prochaine action : return ou recurse
-        if(currentPassResult.isUnsolvable()) {
-            solveResult.incNbUnsolvableGrids();
-            return;
-        }
-        if(currentPassResult.getNbPasses() >= Grid.MAX_RECURSION_DEPTH){
-            solveResult.incNbFailedGrids();
-            return;
-        }
-        if(currentPassResult.isSolved()){
-            solveResult.addSolution(currentPassResult.getCellArray());
-            return;
-        }
 
         if (solveResult.needsRecursion()) {
             // Crée un embranchement et en explore la première branche
