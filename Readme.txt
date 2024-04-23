@@ -45,6 +45,7 @@ Coirier__Romain\ : Racine du Projet
 |
 |-test\utils\
 |        |-GridTest.java : implémentation des tests jUnit des fonctions publiques de src\utils\Grid.java
+|        |-resultats_tests.jpg : une copie ecran des results de tests de la classe GridTest
 |
 |-buildJar.bat : un script qui compile et archive le projet dans monSudoku.jar puis execute l'execute
 |-grille1.txt : une copie de la grille fournie en exemple sur la plateforme du cnam

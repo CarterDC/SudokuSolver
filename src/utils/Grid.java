@@ -512,12 +512,13 @@ public class Grid {
         if (solveResult.needsRecursion()) {
             // Crée un embranchement et en explore la première branche
             int[][][][] cellArrayFork = createFork(solveResult.getCurrentPassResult().getCellArray());
+
             PassResult firstFork = new PassResult(cellArrayFork[0]);
             solveResult.setCurrentPassResult(firstFork);
             Grid.recurseSolve(solveResult);
             // vérif si on a notre nbre de soluces
             if (!solveResult.isFull()) {
-                // on n'a pas atteint notre quota de soluces, on explore le second embranchement
+                // on n'a pas atteint notre quota de soluces, on explore la seconde branche
                 PassResult secondFork = new PassResult(cellArrayFork[1]);
                 solveResult.setCurrentPassResult(secondFork);
                 Grid.recurseSolve(solveResult);

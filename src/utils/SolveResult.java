@@ -127,7 +127,7 @@ public class SolveResult {
                 System.out.println(MessageFormat.format("Solution N°{0} :", solutionIndex + 1));
                 System.out.println(Grid.cellArrayToString(this.solutions[solutionIndex]));
                 solutionIndex++;
-            }            
+            }         
         }
 
         // peu importe qu'il y ait des solutions ou pas, on affiche les stats
